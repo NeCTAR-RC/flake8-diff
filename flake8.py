@@ -93,9 +93,9 @@ def git_diff_linenumbers(filename, revision=None):
         return lines_output.split() + lines_output1.split()
 
 
-def flake8(filename):
+def flake8(filename, *args):
     """Run flake8 over a file and return the output"""
-    proc = subprocess.Popen(" ".join([FLAKE8, filename]),
+    proc = subprocess.Popen(" ".join([FLAKE8, filename] + list(args)),
                             stdout=subprocess.PIPE, env=env, shell=True)
     (output, err) = proc.communicate()
     status = proc.wait()
@@ -133,6 +133,8 @@ def git_current_rev():
 WHITE_LIST = [re.compile(r'.*[.]py$')]
 BLACK_LIST = []
 
+SPECIAL_CASE_ARGS = {r'migrations/[0-9]+': ['--ignore=E501']}
+
 
 def main():
     exit_status = 0
@@ -151,7 +153,14 @@ def main():
             print >> sys.stderr, 'SKIPPING %s' % filename
             continue
         included_lines = git_diff_linenumbers(filename, revision)
-        flake8_output = flake8(filename)
+
+        for regex, args in SPECIAL_CASE_ARGS.items():
+            if re.search(regex, filename):
+                flake8_output = flake8(filename, *args)
+                break
+        else:
+            flake8_output = flake8(filename)
+
         for line in flake8_output.split('\n'):
             line_details = line_match.match(line)
             if not line_details:
