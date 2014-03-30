@@ -30,7 +30,9 @@ import os
 import re
 import sys
 import subprocess
+import logging
 
+log = logging.getLogger(__file__)
 
 env = os.environ.copy()
 line_match = re.compile(r'^([^\s]+):([\d]+):[\d]+: ')
@@ -97,8 +99,7 @@ def flake8(filename, *args):
     (output, err) = proc.communicate()
     status = proc.wait()
     if status != 0 and len(output) == 0:
-        print err
-        raise Exception("Something odd happened while executing flake8.")
+        log.exception()
     return output
 
 
@@ -140,11 +141,11 @@ def main():
     for filename in files:
         if not all(map(lambda x: x.match(filename),
                        WHITE_LIST)):
-            print >> sys.stderr, 'SKIPPING %s' % filename
+            log.info('SKIPPING %s' % filename)
             continue
         if any(map(lambda x: x.match(filename),
                    BLACK_LIST)):
-            print >> sys.stderr, 'SKIPPING %s' % filename
+            log.info('SKIPPING %s' % filename)
             continue
         included_lines = git_diff_linenumbers(filename, revision)
 
@@ -165,5 +166,22 @@ def main():
                 exit_status = 1
     sys.exit(exit_status)
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument(
+        '-v', '--verbose', action='count', default=0,
+        help='Increase verbosity (specify multiple times for more).')
+    args = parser.parse_args()
+
+    log_level = logging.WARNING
+    if args.verbose == 1:
+        log_level = logging.INFO
+    elif args.verbose >= 2:
+        log_level = logging.DEBUG
+
+    logging.basicConfig(level=log_level, format='%(message)s')
     main()
