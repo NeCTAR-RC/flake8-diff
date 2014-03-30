@@ -34,7 +34,6 @@ import logging
 
 log = logging.getLogger(__file__)
 
-env = os.environ.copy()
 line_match = re.compile(r'^([^\s]+):([\d]+):[\d]+: ')
 
 
