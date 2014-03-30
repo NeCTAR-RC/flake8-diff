@@ -120,10 +120,27 @@ def git_changed_files(revision=None):
                 if filename]
 
 
+def list_all_files():
+    for path, subdirs, files in os.walk(git_repository_root()):
+        for name in files:
+            yield os.path.join(path, name)
+
+
+def git_repository_root():
+    return subprocess.check_output(
+        [GIT, "rev-parse", '--show-toplevel']).strip()
+
+
 def git_current_rev():
     return subprocess.check_output([GIT, "rev-parse", "HEAD^"]).strip()
 
 
+class AnyLine():
+    def __init__(self, filename, revision):
+        pass
+
+    def __contains__(self, x):
+        return True
 
 WHITE_LIST = [re.compile(r'.*[.]py$')]
 BLACK_LIST = []
@@ -131,13 +148,8 @@ BLACK_LIST = []
 SPECIAL_CASE_ARGS = {r'migrations/[0-9]+': ['--ignore=E501']}
 
 
-def main():
+def check_files(files, revision=None, changed_lines=git_diff_linenumbers):
     exit_status = 0
-    revision = None
-    files = git_changed_files()
-    if not files:
-        revision = git_current_rev()
-        files = git_changed_files(revision)
     for filename in files:
         if not all(map(lambda x: x.match(filename),
                        WHITE_LIST)):
@@ -147,7 +159,7 @@ def main():
                    BLACK_LIST)):
             log.info('SKIPPING %s' % filename)
             continue
-        included_lines = git_diff_linenumbers(filename, revision)
+        included_lines = changed_lines(filename, revision)
 
         for regex, args in SPECIAL_CASE_ARGS.items():
             if re.search(regex, filename):
@@ -175,6 +187,10 @@ if __name__ == '__main__':
     parser.add_argument(
         '-v', '--verbose', action='count', default=0,
         help='Increase verbosity (specify multiple times for more).')
+    parser.add_argument(
+        '-a', '--all', action='store_true', default=False,
+        help='Check the entire repository, not just changed files.')
+
     args = parser.parse_args()
 
     log_level = logging.WARNING
@@ -184,4 +200,16 @@ if __name__ == '__main__':
         log_level = logging.DEBUG
 
     logging.basicConfig(level=log_level, format='%(message)s')
-    main()
+
+    if args.all:
+        revision = None
+        files = list_all_files()
+        changed_lines = AnyLine
+    else:
+        revision = git_current_rev()
+        files = git_changed_files(revision)
+        changed_lines = git_diff_linenumbers
+
+    check_files(files=files,
+                revision=revision,
+                changed_lines=changed_lines)
