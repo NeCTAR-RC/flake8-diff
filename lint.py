@@ -34,7 +34,10 @@ import logging
 
 log = logging.getLogger(__file__)
 
-line_match = re.compile(r'^([^\s]+) - .* ([\d]+)$')
+line_matchers = {
+    'flake8': re.compile(r'^([^\s]+):([\d]+):[\d]+: '),
+    'puppet-lint': re.compile(r'^([^\s]+) - .* ([\d]+)$'),
+}
 
 
 def which(name, flags=os.X_OK):
@@ -142,15 +145,16 @@ BLACK_LIST = []
 SPECIAL_CASE_ARGS = {}
 
 
-def check_files(executable, revision=None,
+def check_files(executable, line_match, revision=None,
                 changed_lines=git_diff_linenumbers):
     exit_status = 0
-
+    skipped_lines = 0
     lint_output = lint(executable)
 
     for line in lint_output.split('\n'):
         line_details = line_match.match(line)
         if not line_details:
+            print line
             continue
         filename, lineno = line_details.groups()
 
@@ -167,6 +171,11 @@ def check_files(executable, revision=None,
         if lineno in included_lines:
             print line
             exit_status = 1
+        else:
+            skipped_lines += 1
+
+    if skipped_lines > 0:
+        print "....Skipped %s lines....." % skipped_lines
     sys.exit(exit_status)
 
 
@@ -181,6 +190,9 @@ if __name__ == '__main__':
     parser.add_argument(
         '-a', '--all', action='store_true', default=False,
         help='Check the entire repository, not just changed files.')
+    parser.add_argument(
+        '--linter', choices=line_matchers.keys(),
+        default='puppet-lint')
     parser.add_argument(
         'executable',
         metavar='ARG', nargs='+',
@@ -220,5 +232,6 @@ if __name__ == '__main__':
 
     check_files(
         args.executable,
+        line_matchers[args.linter],
         revision=revision,
         changed_lines=changed_lines)
