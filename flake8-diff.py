@@ -79,7 +79,7 @@ def git_diff_linenumbers(filename, revision=None):
                 [GIT] + difftool_command + list(args) + ["--", filename])
         except subprocess.CalledProcessError:
             lines_output = ""
-        return lines_output
+        return lines_output.decode('utf-8')
 
     if revision:
         lines_output = _call(revision)
@@ -99,21 +99,21 @@ def flake8(filename, *args):
     status = proc.wait()
     if status != 0 and len(output) == 0:
         log.exception()
-    return output
+    return output.decode('utf-8')
 
 
 def git_changed_files(revision=None):
     """Return a list of all the files changed in git"""
     if revision:
         files = subprocess.check_output(
-            [GIT, "diff", "--name-only", revision])
+            [GIT, "diff", "--name-only", revision]).decode('utf-8')
         return [filename for filename in files.split('\n')
                 if filename]
     else:
         files = subprocess.check_output(
-            [GIT, "diff", "--name-only"])
+            [GIT, "diff", "--name-only"]).decode('utf-8')
         cached_files = subprocess.check_output(
-            [GIT, "diff", "--name-only", "--cached"])
+            [GIT, "diff", "--name-only", "--cached"]).decode('utf-8')
         return [filename for filename
                 in set(files.split('\n')) | set(cached_files.split('\n'))
                 if filename]
@@ -127,11 +127,12 @@ def list_all_files():
 
 def git_repository_root():
     return subprocess.check_output(
-        [GIT, "rev-parse", '--show-toplevel']).strip()
+        [GIT, "rev-parse", '--show-toplevel']).decode('utf-8').strip()
 
 
 def git_current_rev():
-    return subprocess.check_output([GIT, "rev-parse", "HEAD^"]).strip()
+    return subprocess.check_output([
+        GIT, "rev-parse", "HEAD^"]).decode('utf-8').strip()
 
 
 class AnyLine():
@@ -173,7 +174,7 @@ def check_files(files, revision=None, changed_lines=git_diff_linenumbers):
                 continue
             flake_filename, lineno = line_details.groups()
             if lineno in included_lines:
-                print line
+                print(line)
                 exit_status = 1
     sys.exit(exit_status)
 

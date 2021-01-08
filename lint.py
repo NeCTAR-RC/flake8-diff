@@ -75,6 +75,7 @@ def git_diff_linenumbers(filename, revision=None):
         try:
             lines_output = subprocess.check_output(
                 [GIT] + difftool_command + list(args) + ["--", filename])
+            lines_output = lines_output.decode('utf-8')
         except subprocess.CalledProcessError:
             lines_output = ""
         return lines_output
@@ -97,21 +98,21 @@ def lint(args):
     status = proc.wait()
     if status != 0 and len(output) == 0:
         log.exception()
-    return output
+    return output.decode('utf-8')
 
 
 def git_changed_files(revision=None):
     """Return a list of all the files changed in git"""
     if revision:
         files = subprocess.check_output(
-            [GIT, "diff", "--name-only", revision])
+            [GIT, "diff", "--name-only", revision]).decode('utf-8')
         return [filename for filename in files.split('\n')
                 if filename]
     else:
         files = subprocess.check_output(
-            [GIT, "diff", "--name-only"])
+            [GIT, "diff", "--name-only"]).decode('utf-8')
         cached_files = subprocess.check_output(
-            [GIT, "diff", "--name-only", "--cached"])
+            [GIT, "diff", "--name-only", "--cached"]).decode('utf-8')
         return [filename for filename
                 in set(files.split('\n')) | set(cached_files.split('\n'))
                 if filename]
@@ -154,7 +155,7 @@ def check_files(executable, line_match, revision=None,
     for line in lint_output.split('\n'):
         line_details = line_match.match(line)
         if not line_details:
-            print line
+            print(line)
             continue
         filename, lineno = line_details.groups()
 
@@ -169,13 +170,13 @@ def check_files(executable, line_match, revision=None,
         included_lines = changed_lines(filename, revision)
 
         if lineno in included_lines:
-            print line
+            print(line)
             exit_status = 1
         else:
             skipped_lines += 1
 
     if skipped_lines > 0:
-        print "....Skipped %s lines....." % skipped_lines
+        print("....Skipped %s lines....." % skipped_lines)
     sys.exit(exit_status)
 
 
