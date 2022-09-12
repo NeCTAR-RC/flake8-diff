@@ -36,7 +36,7 @@ log = logging.getLogger(__file__)
 
 line_matchers = {
     'flake8': re.compile(r'^([^\s]+):([\d]+):[\d]+: '),
-    'puppet-lint': re.compile(r'^([^\s]+) - .* ([\d]+)$'),
+    'puppet-lint': re.compile(r'^([^\s]+) - .*line ([\d]+).*$'),
 }
 
 
