@@ -98,7 +98,7 @@ def lint(args):
     (output, err) = proc.communicate()
     status = proc.wait()
     if status != 0 and len(output) == 0:
-        LOG.error(err.decode('utf-8'))
+        LOG.error("Not output")
     return output.decode('utf-8')
 
 
