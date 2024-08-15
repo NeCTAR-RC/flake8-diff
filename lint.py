@@ -26,13 +26,13 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import logging
 import os
 import re
-import sys
 import subprocess
-import logging
+import sys
 
-log = logging.getLogger(__file__)
+LOG = logging.getLogger(__file__)
 
 line_matchers = {
     'flake8': re.compile(r'^([^\s]+):([\d]+):[\d]+: '),
@@ -57,9 +57,10 @@ def which(name, flags=os.X_OK):
                 result.append(pext)
     return result
 
+
 try:
     GIT = which('git')[0]
-except:
+except Exception:
     GIT = ""
 
 
@@ -97,7 +98,7 @@ def lint(args):
     (output, err) = proc.communicate()
     status = proc.wait()
     if status != 0 and len(output) == 0:
-        log.exception()
+        LOG.error(err.decode('utf-8'))
     return output.decode('utf-8')
 
 
@@ -140,9 +141,9 @@ class AnyLine():
     def __contains__(self, x):
         return True
 
+
 WHITE_LIST = [re.compile(r'.*')]
 BLACK_LIST = []
-
 SPECIAL_CASE_ARGS = {}
 
 
@@ -161,11 +162,11 @@ def check_files(executable, line_match, revision=None,
 
         if not all(map(lambda x: x.match(filename),
                        WHITE_LIST)):
-            log.info('SKIPPING %s' % filename)
+            LOG.info('SKIPPING %s' % filename)
             continue
         if any(map(lambda x: x.match(filename),
                    BLACK_LIST)):
-            log.info('SKIPPING %s' % filename)
+            LOG.info('SKIPPING %s' % filename)
             continue
         included_lines = changed_lines(filename, revision)
 
